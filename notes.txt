@@ -6,6 +6,7 @@ create table internautes (
   adress varchar(255) NOT NULL,
   phone varchar(30) NOT NULL,
   mail varchar(255) NOT NULL,
+  register_date timestamp NOT NULL,
   UNIQUE (id),
   UNIQUE (mail),
   UNIQUE (phone)
@@ -42,7 +43,7 @@ INSERT INTO form (name, column_name, type, pattern, min_length, max_length, size
 ),(
 "Adresse", "adress-", "text", "", "", "", "", "22 avenue du petit four"
 ),(
-"E-mail", "mail-", "email", "[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$", "", "", "", "john.doe@example.com"
+"E-mail", "mail-", "email", "[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,4}$", "", "", "", "john.doe@example.com"
 ),(
 "Numéro de téléphone", "phone-", "tel", "", "10", "10", "10", "0666666666"
 ),(

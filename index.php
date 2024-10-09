@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer form</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -67,7 +66,7 @@
 <body>
     <a href="/admin.php">Admin login</a>
     <?php
-    session_start();
+    // session_start();
     // echo 'hello world !';
     // $fields = [
     //     array("name" => "Prénom", "column_name" => "firstname-", "type" => "text", "pattern" => "", "min_length" => "","max_length" => "", "size" => "","placeholder" => ""),
@@ -77,7 +76,7 @@
     //     array("name" => "Date de naissance", "column_name" => "date-", "type" => "date", "pattern" => "", "min_length" => "","max_length" => "", "size" => "","placeholder" => ""),
     //     array("name" => "Photo de profil", "column_name" => "profil-", "type" => "file", "pattern" => "","min_length" => "","max_length" => "", "size" => "","placeholder" => "")
     // ];
-    
+
     try {
         $dsn = 'mysql:dbname=customer;host=127.0.0.1';
         $user = 'damien';
@@ -97,7 +96,9 @@
 
 
 
+    // var_dump($_POST);
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
+        // echo 'hold post';
         $db_fields = '';
         $db_values = [];
         $empty_fields = 0;
@@ -106,16 +107,18 @@
         foreach ($fields as $key => $field) {
             if (empty($_POST[$field['column_name']]) && $field['type'] != 'file') {
                 $empty_fields++;
+                // echo 'in';
                 $error = true;
             } else {
                 if ($field['type'] == 'file') {
                     // do file upload
+                    // echo 'is_file';
                     if (isset($_FILES[$field['column_name']]) && $_FILES[$field['column_name']]['error'] === 0) {
-
+                        // echo 'files exists';
                         if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['firstname-']) && isset($_POST['lastname-'])) {
-
+                            echo 'post';
                             // var_dump($_FILES);
-    
+
 
                             $uploadDir = 'profil/';  // Dossier où stocker les images
                             $fileName = basename($_FILES[$field['column_name']]['name']);
@@ -128,13 +131,16 @@
                                 if (move_uploaded_file($_FILES[$field['column_name']]['tmp_name'], $targetFilePath)) {
                                     $message_type = 'success';
                                     $message = "L'image a bien été téléchargée.";
+                                    $error = false;
                                 } else {
                                     $message_type = 'error';
                                     $message = "Une erreur s'est produite au moment du chargement de l'image.";
+                                    $error = true;
                                 }
                             } else {
                                 $message_type = 'error';
                                 $message = "Seul les fichiers JPG, JPEG, PNG, et GIF sont acceptés.";
+                                $error = true;
                             }
                         }
                     }
@@ -153,35 +159,41 @@
         if ($error != true && (strlen($db_fields) > 0 && count($db_values) > 0)) {
             // do query
             try {
-                $sql = "INSERT INTO internautes (" . substr($db_fields, 0, strlen($db_fields) - 1). ",registered_date" . ") VALUES (" . substr($interr, 0, strlen($interr) - 1) . time() . ")";
+                $sql = "INSERT INTO internautes (" . substr($db_fields, 0, strlen($db_fields) - 1) . ",register_date" . ") VALUES (" . substr($interr, 0, strlen($interr) - 1) . ", ?" . ")";
+                // echo $sql;
                 $stmt = $dbh->prepare($sql);
+                $currentDateTime = new DateTime('now'); 
+                $currentDate = $currentDateTime->format('Y-m-d');
+                array_push($db_values, $currentDate);
+                // var_dump($db_values);
                 $stmt->execute($db_values);
                 $message_type = 'success';
                 $message = "Votre formulaire a bien été soumis.";
             } catch (\Throwable $th) {
                 $message_type = 'error';
+                // echo $th;
                 $message = "L'email ou bien le numéro de téléphone existe déjà.";
             }
         } else {
             $message_type = 'error';
             $message = strval($empty_fields) . " champs vides.";
         }
-        unset($_POST);
-
+        // unset($_POST);
+        // header("Refresh:0");
     }
     ?>
     <h1>Customer form</h1>
     <form action="/index.php" id="customer-form" method="post" class="customer-form" enctype="multipart/form-data">
         <?php
         foreach ($fields as $key => $field):
-            ?>
+        ?>
             <div class="label-form">
                 <?php
                 if (substr($field['column_name'], strlen($field['column_name']) - 1, strlen($field['column_name']) - 1) == '-'):
-                    ?>
+                ?>
                     <?php
                     if (empty($field['pattern'])):
-                        ?>
+                    ?>
 
                         <?php if ($field['type'] == 'file'): ?>
                             <div class="field">
@@ -192,18 +204,18 @@
                                     placeholder="<?= $field["placeholder"] ?>" required>
                             </div>
                         <?php else:
-                            ?>
+                        ?>
                             <div class="field">
                                 <label for="<?= $field["column_name"] ?>"><?= $field["name"] ?></label>
                                 <input id="<?= $field["column_name"] ?>" name="<?= $field["column_name"] ?>"
                                     type="<?= $field["type"] ?>" size="<?= $field["size"] ?>" minlength="<?= $field["min_length"] ?>"
                                     maxlength="<?= $field["max_length"] ?>" placeholder="<?= $field["placeholder"] ?>" required>
                             </div>
-                            <?php
+                        <?php
                         endif;
                         ?>
                     <?php else:
-                        ?>
+                    ?>
                         <?php if ($field['type'] == 'file'): ?>
 
                             <div class="field">
@@ -221,16 +233,16 @@
                                     minlength="<?= $field["min_length"] ?>" maxlength="<?= $field["max_length"] ?>"
                                     placeholder="<?= $field["placeholder"] ?>" required>
                             </div>
-                            <?php
+                        <?php
                         endif;
                         ?>
-                        <?php
+                    <?php
                     endif;
                     ?>
                 <?php else: ?>
                     <?php
                     if (empty($field['pattern'])):
-                        ?>
+                    ?>
                         <?php if ($field['type'] == 'file'): ?>
                             <div class="field">
                                 <label for="<?= $field["column_name"] ?>"><?= $field["name"] ?></label>
@@ -240,18 +252,18 @@
                                     placeholder="<?= $field["placeholder"] ?>">
                             </div>
                         <?php else:
-                            ?>
+                        ?>
                             <div class="field">
                                 <label for="<?= $field["column_name"] ?>"><?= $field["name"] ?></label>
                                 <input id="<?= $field["column_name"] ?>" name="<?= $field["column_name"] ?>"
                                     type="<?= $field["type"] ?>" size="<?= $field["size"] ?>" minlength="<?= $field["min_length"] ?>"
                                     maxlength="<?= $field["max_length"] ?>" placeholder="<?= $field["placeholder"] ?>">
                             </div>
-                            <?php
+                        <?php
                         endif;
                         ?>
                     <?php else:
-                        ?>
+                    ?>
                         <?php if ($field['type'] == 'file'): ?>
                             <div class="field">
                                 <label for="<?= $field["column_name"] ?>"><?= $field["name"] ?></label>
@@ -261,7 +273,7 @@
                                     placeholder="<?= $field["placeholder"] ?>" class="files" accept="image/*">
                             </div>
                         <?php else:
-                            ?>
+                        ?>
                             <div class="field">
                                 <label for="<?= $field["column_name"] ?>"><?= $field["name"] ?></label>
                                 <input id="<?= $field["column_name"] ?>" name="<?= $field["column_name"] ?>"
@@ -269,126 +281,43 @@
                                     minlength="<?= $field["min_length"] ?>" maxlength="<?= $field["max_length"] ?>"
                                     placeholder="<?= $field["placeholder"] ?>">
                             </div>
-                            <?php
+                        <?php
                         endif;
                         ?>
-                        <?php
+                    <?php
                     endif;
                     ?>
-                    <?php
+                <?php
                 endif;
                 ?>
             </div>
-            <?php
+        <?php
         endforeach;
         ?>
         <input type="submit" class="btn-submit create" value="Créer mon compte" />
     </form>
-
-    <!-- Afficher un aperçu de l'image uploadée -->
-    <img id="preview" style="display:none;" alt="Image Preview" style="max-width: 200px;">
-
     <?php if (
-        $message_type == 'error'
+        isset($message_type) && $message_type == 'error'
     ): ?>
         <div class="error">
             <?= $message ?>
         </div>
     <?php endif; ?>
     <?php if (
-        $message_type == 'success'
+        isset($message_type) && $message_type == 'success'
     ): ?>
         <div class="success">
             <?= $message ?>
         </div>
     <?php endif; ?>
-    <script>
-        $(document).ready(function() {
-            $("#customer-form").on("submit", function(event) {
-                event.preventDefault(); // Empêche le rechargement de la page
 
-                $.ajax({
-                    type: "POST",
-                    url: "index.php",
-                    data: $(this).serialize(),
-                    success: function(response) {
-                        $("#response").html(response); // Affiche la réponse du serveur
-                    },
-                    error: function() {
-                        $("#response").html("Une erreur s'est produite lors de l'envoi des données.");
-                    }
-                });
-            });
-        });
+    <!-- Afficher un aperçu de l'image uploadée -->
+    <img id="preview" style="display:none;" alt="Image Preview" style="max-width: 200px;">
 
-        let fileInputs = document.getElementsByClassName('files');
-        for (let index = 0; index < fileInputs.length; index++) {
-            const fileInput = fileInputs[index];
-            // console.log(fileInput)
-            let form = document.getElementById('customer-form')
-
-            fileInput.onchange = function (e) {
-                // get the file someone selected
-                var file = fileInput.files && fileInput.files[0];
-
-                // create an image element with that selected file
-                var img = new Image();
-                img.src = window.URL.createObjectURL(file);
-
-                // as soon as the image has been loaded
-                img.onload = function () {
-                    var width = img.naturalWidth,
-                        height = img.naturalHeight;
-
-                    // check its dimensions
-                    if (width == 200 && height == 200) {
-                        // it fits
-                        // we do nothing here
-                        document.getElementsByClassName('error')[0].innerText = ""
-                        console.log('it fits')
-                    } else {
-                        // it doesn't fit, unset the value 
-                        // post an error
-                        fileInput.value = ""
-                        document.getElementsByClassName('error')[0].innerText = "Veuillez renseigner une image avec les dimensions correspondantes : 200px x 200px."
-                        // alert("only 200x200 images")
-                    }
-                };
-            }
-
-            form.onsubmit = function (e) {
-                // e.preventDefault();
-
-                // get the file someone selected
-                var file = fileInput.files && fileInput.files[0];
-
-                // create an image element with that selected file
-                var img = new Image();
-                img.src = window.URL.createObjectURL(file);
-
-                // as soon as the image has been loaded
-                img.onload = function () {
-                    var width = img.naturalWidth,
-                        height = img.naturalHeight;
-
-                    // check its dimensions
-                    if (width == 200 && height == 200) {
-                        // it fits
-                        // we do nothing here
-                        console.log('it fits')
-                    } else {
-                        e.stopPropagation()
-                        document.getElementsByClassName('error')[0].innerText = "Veuillez renseigner une image avec les dimensions correspondantes : 200px x 200px."
-                        // alert("only 200x200 images")
-                    }
-                };
-
-            };
-
-        }
-
+    <script src="./js/main.js" type="application/js">
 
     </script>
+    <script src="./js/jQuery.min.js"></script>
 </body>
 
 </html>
