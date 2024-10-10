@@ -34,7 +34,7 @@ create table admin (
   UNIQUE(email)
 );
 
-INSERT INTO admin(email, password) VALUES ("admin@web.ac", "admin");
+INSERT INTO admin(email, password) VALUES ("admin@web.ac", "$2y$12$dLK4tbjGX3rwGRyC0psWaurlZjp2N.yNyJ0/RM.VcYXVuIDDAs7TS");
 
 INSERT INTO form (name, column_name, type, pattern, min_length, max_length, size, placeholder) VALUES (
 "Prénom", "firstname-", "text", "", "", "", "", "John"

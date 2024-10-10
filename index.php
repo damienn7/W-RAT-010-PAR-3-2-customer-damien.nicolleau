@@ -77,15 +77,7 @@
     //     array("name" => "Photo de profil", "column_name" => "profil-", "type" => "file", "pattern" => "","min_length" => "","max_length" => "", "size" => "","placeholder" => "")
     // ];
 
-    try {
-        $dsn = 'mysql:dbname=customer;host=127.0.0.1';
-        $user = 'damien';
-        $password = 'PETITnuage-26';
-
-        $dbh = new PDO($dsn, $user, $password);
-    } catch (\Throwable $th) {
-        throw $th;
-    }
+    require('./pdo.php');
 
     $sth = $dbh->prepare('SELECT * FROM form');
     $sth->execute();
@@ -116,7 +108,7 @@
                     if (isset($_FILES[$field['column_name']]) && $_FILES[$field['column_name']]['error'] === 0) {
                         // echo 'files exists';
                         if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['firstname-']) && isset($_POST['lastname-'])) {
-                            echo 'post';
+                            // echo 'post';
                             // var_dump($_FILES);
 
 

@@ -112,15 +112,13 @@
 <body>
     <?php
 
-    try {
-        $dsn = 'mysql:dbname=customer;host=127.0.0.1';
-        $user = 'damien';
-        $password = 'PETITnuage-26';
-        $dbh = new PDO($dsn, $user, $password);
-    } catch (\Throwable $th) {
-        throw $th;
-    }
+    require('./pdo.php');
+
     // var_dump($_SESSION);
+    // if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['idToRemove'])) {
+    //     var_dump($_POST);
+    // }
+
     if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] == "true") {
 
         try {
@@ -157,15 +155,17 @@
     } else {
         if ($_SERVER["REQUEST_METHOD"] == "POST") {
             try {
-                //code...
-                $sth = $dbh->prepare('SELECT * FROM admin where `email` = ? AND `password` = ?');
+                $sth = $dbh->prepare('SELECT * FROM admin where `email` = ?');
                 // echo 'SELECT * FROM admin where `email` = ? & `password` = ?';
-                $sth->execute([htmlspecialchars($_POST['email']), htmlspecialchars($_POST['password'])]);
+                echo $password_check;
+                $sth->execute([htmlspecialchars($_POST['email'])]);
                 // echo htmlspecialchars($_POST['email']);
                 // echo htmlspecialchars($_POST['password']);
                 $admin = $sth->fetch();
+                $password_check = password_verify(htmlspecialchars($_POST['password']), $admin['password']);
+                // var_dump($admin);
                 // echo count($admin) > 0;
-                if (count($admin) > 0) {
+                if ($password_check) {
                     $_SESSION['logged_in'] = "true";
                     // echo "in";
                     // echo $SESSION;
@@ -204,7 +204,9 @@
         }
     }
     ?>
+    <p><a href="index.php">Page d'accueil</a></p>
     <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] == "true"): ?>
+        <p><a href="logout.php">Logout</a></p>
         <div id="handsontable"></div>
     <?php else: ?>
         <h1>Admin login</h1>
@@ -240,6 +242,7 @@
         // import "handsontable/dist/handsontable.min.css";
 
         const example = document.getElementById("handsontable");
+        var previousRemovedData = [];
         console.log("<?php echo $_SESSION['email']; ?>")
         console.log("<?php echo $_SESSION['logged_in']; ?>")
         const headerAlignments = new Map([
@@ -247,6 +250,14 @@
             ["10", "htRight"],
             ["12", "htCenter"]
         ]);
+
+        // function setPreviousRemovedData(data) {
+        //     previousRemovedData = data;
+        // }
+
+        // function getPreviousRemovedData(data) {
+        //     return previousRemovedData;
+        // }
 
         function addClassesToRows(TD, row, column, prop, value, cellProperties) {
             // Adding classes to `TR` just while rendering first visible `TD` element
@@ -311,11 +322,39 @@
                 this.setDataAtRowProp(coords.row, "0", !target.checked);
             }
         }
+
+        function removeRow(id) {
+
+            const formData = new FormData();
+
+            formData.append("idToRemove", id);
+
+            const data = new URLSearchParams(formData);
+
+            let url = 'delete.php'
+
+            const response = fetch(url, {
+                method: "POST", // *GET, POST, PUT, DELETE, etc.
+                // mode: "cors", // no-cors, *cors, same-origin
+                // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+                // credentials: "same-origin", // include, *same-origin, omit
+                headers: {
+                // "Content-Type": "application/json",
+                'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                // redirect: "follow", // manual, *follow, error
+                // referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+                body: data, // le type utilisé pour le corps doit correspondre à l'en-tête "Content-Type"
+            });
+            // console.log(response.json())
+            
+        }
+
         if ('<?php echo $_SESSION['data']; ?>' != undefined && '<?php echo strlen($_SESSION['data']); ?>' > 0) {
             data = JSON.parse('<?php echo $_SESSION['data']; ?>')
             console.log(data);
 
-            new Handsontable(example, {
+            const hot = new Handsontable(example, {
                 data,
                 height: 450,
                 colWidths: [170, 156, 222, 130, 130, 120, 120],
@@ -360,6 +399,18 @@
                 manualRowMove: true,
                 autoWrapCol: true,
                 autoWrapRow: true,
+                beforeRemoveRow: function(row, col) {
+                    console.log(row)
+                    var m = hot.getDataAtCell(row, 0);
+                    removeRow(m)
+                },
+                afterSelection: function (r, c) {
+                    var da = this.getDataAtRow(r);
+                    selectedRow = "";
+                    selectedRow = da[0];
+                    console.log(selectedRow);
+
+                },
                 afterGetColHeader: alignHeaders,
                 beforeRenderer: addClassesToRows,
                 licenseKey: "non-commercial-and-evaluation",
