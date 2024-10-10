@@ -339,15 +339,46 @@
                 // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
                 // credentials: "same-origin", // include, *same-origin, omit
                 headers: {
-                // "Content-Type": "application/json",
-                'Content-Type': 'application/x-www-form-urlencoded',
+                    // "Content-Type": "application/json",
+                    'Content-Type': 'application/x-www-form-urlencoded',
                 },
                 // redirect: "follow", // manual, *follow, error
                 // referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
                 body: data, // le type utilisé pour le corps doit correspondre à l'en-tête "Content-Type"
             });
             // console.log(response.json())
-            
+
+        }
+
+        function upsertRow(upsertRow) {
+
+            const formData = new FormData();
+
+            formData.append("id", upsertRow.id);
+            formData.append("mail", upsertRow.mail);
+            formData.append("firstname", upsertRow.firstname);
+            formData.append("lastname", upsertRow.lastname);
+            formData.append("register", upsertRow.register);
+
+            const data = new URLSearchParams(formData);
+
+            let url = 'upsert.php'
+
+            const response = fetch(url, {
+                method: "POST", // *GET, POST, PUT, DELETE, etc.
+                // mode: "cors", // no-cors, *cors, same-origin
+                // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+                // credentials: "same-origin", // include, *same-origin, omit
+                headers: {
+                    // "Content-Type": "application/json",
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                // redirect: "follow", // manual, *follow, error
+                // referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+                body: data, // le type utilisé pour le corps doit correspondre à l'en-tête "Content-Type"
+            });
+            // console.log(response.json())
+
         }
 
         if ('<?php echo $_SESSION['data']; ?>' != undefined && '<?php echo strlen($_SESSION['data']); ?>' > 0) {
@@ -404,7 +435,55 @@
                     var m = hot.getDataAtCell(row, 0);
                     removeRow(m)
                 },
-                afterSelection: function (r, c) {
+                afterChange: (changes) => {
+                    if (changes != null) {
+                        changes.forEach(([row, prop, oldValue, newValue]) => {
+                            console.log(row, prop, oldValue, newValue)
+                            var id = hot.getDataAtCell(row, 0);
+                            var mail = hot.getDataAtCell(row, 1);
+                            var lastname = hot.getDataAtCell(row, 2);
+                            var firstname = hot.getDataAtCell(row, 3);
+                            var register = hot.getDataAtCell(row, 4);
+                            console.log(id, mail, lastname, firstname, register)
+                            if (
+                                (id != null && id >= 0) &&
+                                (mail != null && mail.length > 0) &&
+                                (lastname != null && lastname.length > 0) &&
+                                (firstname != null && firstname.length > 0) &&
+                                (register != null && register.length > 0)
+                            ) {
+                                console.log('we can')
+                                upsertRow({
+                                    id:id,
+                                    mail:mail,
+                                    lastname:lastname,
+                                    firstname:firstname,
+                                    register:register
+                                })
+                            }
+                        });
+                    }
+                },
+                afterCreateRow: function(row, col) {
+                    console.log(row)
+                    // var id = hot.getDataAtCell(row, 0);
+                    // var mail = hot.getDataAtCell(row, 1);
+                    // var lastname = hot.getDataAtCell(row, 2);
+                    // var firstname = hot.getDataAtCell(row, 3);
+                    // var register = hot.getDataAtCell(row, 4);
+                    // console.log(id, mail, lastname, firstname, register)
+                    // if (
+                    //     (id != null && id.length > 0) &&
+                    //     (mail != null && mail.length > 0) &&
+                    //     (lastname != null && lastname.length > 0) &&
+                    //     (firstname != null && firstname.length > 0) &&
+                    //     (register != null && register.length > 0)
+                    // ) {
+                    //     console.log('we can')
+                    // }
+                    // removeRow(m)
+                },
+                afterSelection: function(r, c) {
                     var da = this.getDataAtRow(r);
                     selectedRow = "";
                     selectedRow = da[0];
