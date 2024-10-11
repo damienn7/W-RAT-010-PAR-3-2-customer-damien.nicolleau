@@ -106,6 +106,28 @@
         [data-color="orange"] {
             background: #fcb515;
         }
+
+        #example1 {
+            border: 2px solid #333;
+            background: #FFF;
+        }
+
+        .pages {
+            margin-top: 15px;
+            float: right;
+        }
+
+        .myBt {
+            background: #5C6BC0;
+            color: #FFF;
+            width: 30px;
+            font: 0.8em Helvetica;
+            border: 2px solid #3F51B5;
+            border-radius: 2px;
+            margin: 1px;
+            padding: 5px;
+            text-align: center;
+        }
     </style>
 </head>
 
@@ -208,6 +230,7 @@
     <?php if (isset($_SESSION['logged_in']) && $_SESSION['logged_in'] == "true"): ?>
         <p><a href="logout.php">Logout</a></p>
         <div id="handsontable"></div>
+        <div class="pages"></div>
     <?php else: ?>
         <h1>Admin login</h1>
         <form action="admin.php" method="post">
@@ -454,11 +477,11 @@
                             ) {
                                 console.log('we can')
                                 upsertRow({
-                                    id:id,
-                                    mail:mail,
-                                    lastname:lastname,
-                                    firstname:firstname,
-                                    register:register
+                                    id: id,
+                                    mail: mail,
+                                    lastname: lastname,
+                                    firstname: firstname,
+                                    register: register
                                 })
                             }
                         });
@@ -494,6 +517,77 @@
                 beforeRenderer: addClassesToRows,
                 licenseKey: "non-commercial-and-evaluation",
             });
+
+            var rowsOnSinglePage = 15;
+            var pages = document.querySelector('.pages');
+
+            var afterFilterSet = hot.getData();
+            hot.updateSettings({
+                afterFilter: function() {
+                    afterFilterSet = hot.getData();
+                    pages.innerHTML = '';
+                    createPages(rowsOnSinglePage);
+                    hot.updateSettings({
+                        hiddenRows: {
+                            rows: getArray(1),
+                            indicators: false
+                        }
+                    })
+                }
+            });
+
+            function createPages(rowsOnSinglePage) {
+                var bt, els = Math.ceil(afterFilterSet.length / rowsOnSinglePage);
+
+                for (var i = 0; i < els; i++) {
+                    bt = document.createElement('BUTTON');
+                    bt.className = 'myBt';
+                    bt.innerHTML = i + 1;
+                    pages.appendChild(bt);
+                }
+            };
+
+            createPages(rowsOnSinglePage); //we define how many rows should be on a single page
+
+            pages.addEventListener('click', function(e) {
+                var clicked = e.target.innerHTML;
+                if (e.taget !== pages) {
+                    hot.updateSettings({
+                        hiddenRows: {
+                            rows: getArray(clicked),
+                            indicators: false
+                        }
+                    })
+                }
+            });
+
+            function getArray(clicked) {
+                var parts = pages.childElementCount;
+                var arr = [];
+
+                if (clicked === 1) {
+                    for (var i = (clicked * rowsOnSinglePage); i < afterFilterSet.length; i++) {
+                        arr.push(i);
+                    }
+                    return arr;
+                } else {
+                    for (var j = 0; j < (clicked * rowsOnSinglePage) - rowsOnSinglePage; j++) {
+                        arr.push(j);
+                    }
+                    for (var i = (clicked * rowsOnSinglePage); i < afterFilterSet.length; i++) {
+                        arr.push(i);
+                    }
+                    return arr;
+                }
+            }
+
+            hot.updateSettings({
+                hiddenRows: {
+                    rows: getArray(1),
+                    indicators: false
+                }
+            });
+
         }
     </script>
 </body>

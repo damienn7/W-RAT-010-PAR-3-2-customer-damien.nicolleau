@@ -52,3 +52,10 @@ INSERT INTO form (name, column_name, type, pattern, min_length, max_length, size
 "Photo de profil", "photo-", "file", "", "", "", "", "Téléchargez une photo de profil"
 )
 ;
+
+-- Rechercher la valeur maximale existante
+SET @max_value = ( SELECT MAX(id) FROM internautes) + 1;
+
+-- Réinitialiser AUTO_INCREMENT à la valeur maximale existante plus un
+ALTER TABLE internautes
+AUTO_INCREMENT = @max_value + 1;
