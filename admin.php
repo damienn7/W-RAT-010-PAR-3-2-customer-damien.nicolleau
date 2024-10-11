@@ -128,6 +128,49 @@
             padding: 5px;
             text-align: center;
         }
+
+        .confirm-dialog {
+            max-width: 45em;
+            padding: 2rem;
+            width: 90vw;
+            left: 10vw;
+            top: 20vh;
+        }
+
+        .confirm-dialog::backdrop {
+            background-color: rgba(0, 0, 0, 0.3);
+        }
+
+        .confirm-dialog-question {
+            font-size: 1.5em;
+            font-style: italic;
+            font-weight: 600;
+        }
+
+        .confirm-dialog-button-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            margin: 1rem -1rem -1rem;
+        }
+
+        .confirm-dialog-button-group>* {
+            margin: 1rem;
+        }
+
+        .confirm-dialog-button {
+            font-size: 1rem;
+            border-radius: 0.5rem;
+            padding: 0.375rem 0.5rem;
+            margin: 1rem 0.5rem;
+            border: 1px solid #D8D8D8;
+            cursor: pointer;
+        }
+
+        footer {
+            margin-top: 5rem;
+            padding: 0 1rem;
+        }
     </style>
 </head>
 
@@ -260,9 +303,94 @@
             <?= $message ?>
         </div>
     <?php endif; ?>
+    <script src="./js/confirmDialog.js" type="application/js">
+    </script>
     <script>
         // import Handsontable from "handsontable";
         // import "handsontable/dist/handsontable.min.css";
+
+        class ConfirmDialog {
+            constructor({
+                questionText,
+                trueButtonText,
+                falseButtonText
+            }) {
+                this.questionText = questionText || 'Are you sure?';
+                this.trueButtonText = trueButtonText || 'Yes';
+                this.falseButtonText = falseButtonText || 'No';
+
+                this.dialog = undefined;
+                this.trueButton = undefined;
+                this.falseButton = undefined;
+                this.parent = document.body;
+
+                this._createDialog();
+                this._appendDialog();
+            }
+
+
+            _createDialog() {
+                this.dialog = document.createElement("dialog");
+                this.dialog.classList.add("confirm-dialog");
+
+                const question = document.createElement("div");
+                question.textContent = this.questionText;
+                question.classList.add("confirm-dialog-question");
+                this.dialog.appendChild(question);
+
+                const buttonGroup = document.createElement("div");
+                buttonGroup.classList.add("confirm-dialog-button-group");
+                this.dialog.appendChild(buttonGroup);
+
+                this.falseButton = document.createElement("button");
+                this.falseButton.classList.add(
+                    "confirm-dialog-button",
+                    "confirm-dialog-button--false"
+                );
+                this.falseButton.type = "button";
+                this.falseButton.textContent = this.falseButtonText;
+                buttonGroup.appendChild(this.falseButton);
+
+                this.trueButton = document.createElement("button");
+                this.trueButton.classList.add(
+                    "confirm-dialog-button",
+                    "confirm-dialog-button--true"
+                );
+                this.trueButton.type = "button";
+                this.trueButton.textContent = this.trueButtonText;
+                buttonGroup.appendChild(this.trueButton);
+            }
+
+            _appendDialog() {
+                this.parent.appendChild(this.dialog);
+            }
+
+            _destroy() {
+                this.parent.removeChild(this.dialog);
+                delete this;
+            }
+
+            confirm() {
+                return new Promise((resolve, reject) => {
+                    const somethingWentWrongUponCreation = !this.dialog || !this.trueButton || !this.falseButton;
+                    if (somethingWentWrongUponCreation) {
+                        reject("Something went wrong upon modal creation");
+                    }
+
+                    this.dialog.showModal();
+
+                    this.trueButton.addEventListener("click", () => {
+                        resolve(true);
+                        this._destroy();
+                    });
+
+                    this.falseButton.addEventListener("click", () => {
+                        resolve(false);
+                        this._destroy();
+                    });
+                });
+            }
+        }
 
         const example = document.getElementById("handsontable");
         var previousRemovedData = [];
@@ -346,30 +474,39 @@
             }
         }
 
-        function removeRow(id) {
+        async function removeRow(id) {
 
-            const formData = new FormData();
-
-            formData.append("idToRemove", id);
-
-            const data = new URLSearchParams(formData);
-
-            let url = 'delete.php'
-
-            const response = fetch(url, {
-                method: "POST", // *GET, POST, PUT, DELETE, etc.
-                // mode: "cors", // no-cors, *cors, same-origin
-                // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
-                // credentials: "same-origin", // include, *same-origin, omit
-                headers: {
-                    // "Content-Type": "application/json",
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
-                // redirect: "follow", // manual, *follow, error
-                // referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-                body: data, // le type utilisé pour le corps doit correspondre à l'en-tête "Content-Type"
+            const dialog = new ConfirmDialog({
+                questionText: 'Are you sure you want to delete this user ?'
             });
-            // console.log(response.json())
+
+            const deleteEveryUser = await dialog.confirm();
+            if (deleteEveryUser) {
+                const formData = new FormData();
+
+                formData.append("idToRemove", id);
+
+                const data = new URLSearchParams(formData);
+
+                let url = 'delete.php'
+
+                const response = await fetch(url, {
+                    method: "POST", // *GET, POST, PUT, DELETE, etc.
+                    // mode: "cors", // no-cors, *cors, same-origin
+                    // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+                    // credentials: "same-origin", // include, *same-origin, omit
+                    headers: {
+                        // "Content-Type": "application/json",
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    // redirect: "follow", // manual, *follow, error
+                    // referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+                    body: data, // le type utilisé pour le corps doit correspondre à l'en-tête "Content-Type"
+                });
+                // console.log(response.json())
+            } else {
+                window.location.reload();
+            }
 
         }
 
