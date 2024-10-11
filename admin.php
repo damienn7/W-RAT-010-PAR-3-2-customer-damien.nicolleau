@@ -171,6 +171,63 @@
             margin-top: 5rem;
             padding: 0 1rem;
         }
+
+        .js-modal {
+            /* Take the box out of the flow, so that it could look like a modal box */
+            position: absolute;
+
+            /* Avoid the awkwardly stretchy box on bigger screens */
+            max-width: 450px;
+
+            /* Aligning it to the absolute center of the page */
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+
+            /* Some cosmetics */
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, .1);
+        }
+
+        .js-modal-hidden {
+            display: none;
+        }
+
+        /* Make the media inside the box adapt the width of the parent */
+        .js-modal img,
+        .js-modal iframe,
+        .js-modal video {
+            max-width: 100%;
+        }
+
+        /* Make the inner element relatively-positioned to contain the close button */
+        .js-modal-inner {
+            position: relative;
+            padding: 10px;
+        }
+
+        /* Close button */
+        .js-modal-close {
+            font-size: 10px;
+
+            /* Take it out of the flow, and align to the top-left corner */
+            position: absolute;
+            top: -10px;
+            right: -10px;
+
+            /* Size it up */
+            width: 24px;
+            height: 24px;
+
+            /* Text-alignment */
+            text-align: center;
+
+            /* Cosmetics */
+            color: #eee;
+            border-width: 0;
+            border-radius: 100%;
+            background-color: black;
+        }
     </style>
 </head>
 
@@ -307,6 +364,39 @@
         // import Handsontable from "handsontable";
         // import "handsontable/dist/handsontable.min.css";
 
+        let createModal = (modalContent) => {
+            // Definitions
+            let modal = document.createElement("div"),
+                modalStyle = document.createElement("style"),
+                modalCSS = '.js-modal{ position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: rgba(0, 0, 0, .1); max-width: 650px; border-radius: 5px; } .js-modal img, .js-modal iframe, .js-modal video{ max-width: 100%; } .js-modal-inner{ position: relative; padding: 10px; } .js-modal-close{ position: absolute; top: -10px; right: -10px; background-color: black; color: #eee; border-width: 0; font-size: 10px; height: 24px; width: 24px; border-radius: 100%; text-align: center; }',
+                modalClose = '<button class="js-modal-close" id="js_modal_close">X</button>',
+                theBody = document.getElementsByTagName('body')[0],
+                theHead = document.getElementsByTagName('head')[0];
+
+            // Add content and attributes to the modal
+            modal.setAttribute("class", "js-modal");
+            modal.innerHTML = '<div class="js-modal-inner">' + modalContent + modalClose + '</div>';
+            theBody.appendChild(modal);
+
+            modalClose = document.querySelector("#js_modal_close");
+
+            // Add the modal styles dynamically
+            if (modalStyle.styleSheet) {
+                modalStyle.styleSheet.cssText = modalCSS;
+            } else {
+                modalStyle.appendChild(document.createTextNode(modalCSS));
+            }
+            theHead.appendChild(modalStyle);
+
+            // Close the modal on button-click
+            if (modalClose) {
+                modalClose.addEventListener('click', function() {
+                    modal.remove();
+                    modalStyle.remove();
+                });
+            }
+        }
+
         class ConfirmDialog {
             constructor({
                 questionText,
@@ -399,14 +489,6 @@
             ["10", "htRight"],
             ["12", "htCenter"]
         ]);
-
-        // function setPreviousRemovedData(data) {
-        //     previousRemovedData = data;
-        // }
-
-        // function getPreviousRemovedData(data) {
-        //     return previousRemovedData;
-        // }
 
         function addClassesToRows(TD, row, column, prop, value, cellProperties) {
             // Adding classes to `TR` just while rendering first visible `TD` element
@@ -539,6 +621,63 @@
 
         }
 
+        async function displayUserInfos(id) {
+            const formData = new FormData();
+
+            formData.append("id", id);
+
+            const data = new URLSearchParams(formData);
+
+            let url = 'get_internaute.php'
+
+            const response = await fetch(url, {
+                method: "POST", // *GET, POST, PUT, DELETE, etc.
+                // mode: "cors", // no-cors, *cors, same-origin
+                // cache: "no-cache", // *default, no-cache, reload, force-cache, only-if-cached
+                // credentials: "same-origin", // include, *same-origin, omit
+                headers: {
+                    // "Content-Type": "application/json",
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                // redirect: "follow", // manual, *follow, error
+                // referrerPolicy: "no-referrer", // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
+                body: data, // le type utilisé pour le corps doit correspondre à l'en-tête "Content-Type"
+            })
+
+            // Lire directement le corps de la réponse en texte
+            const responseText = await response.text();
+
+            try {
+                // Parse la réponse en JSON (selon l'exemple que tu as donné)
+                const parsedData = JSON.parse(responseText);
+
+                let message = "";
+
+                // Itérer sur les paires clé-valeur du JSON
+                Object.entries(parsedData).forEach(([key, value]) => {
+                    // Vérifier si la clé est numérique
+                    if (isNaN(key)) {
+                        message += "<p>" + key + " : " + value + "</p>"; // Ajouter la valeur et un retour à la ligne
+                    }
+                });
+
+                // Utiliser le message final
+                console.log("Message final:", message);
+                triggerModal(message); // Appelle la fonction pour afficher le message dans un modal
+
+            } catch (error) {
+                console.error("Erreur de parsing JSON :", error);
+            }
+
+        }
+
+        function triggerModal(message) {
+            console.log(message)
+            if (message.length > 0) {
+                createModal(message);
+            }
+        }
+
         if ('<?php echo $_SESSION['data']; ?>' != undefined && '<?php echo strlen($_SESSION['data']); ?>' > 0) {
             data = JSON.parse('<?php echo $_SESSION['data']; ?>')
             console.log(data);
@@ -622,31 +761,12 @@
                         });
                     }
                 },
-                afterCreateRow: function(row, col) {
-                    console.log(row)
-                    // var id = hot.getDataAtCell(row, 0);
-                    // var mail = hot.getDataAtCell(row, 1);
-                    // var lastname = hot.getDataAtCell(row, 2);
-                    // var firstname = hot.getDataAtCell(row, 3);
-                    // var register = hot.getDataAtCell(row, 4);
-                    // console.log(id, mail, lastname, firstname, register)
-                    // if (
-                    //     (id != null && id.length > 0) &&
-                    //     (mail != null && mail.length > 0) &&
-                    //     (lastname != null && lastname.length > 0) &&
-                    //     (firstname != null && firstname.length > 0) &&
-                    //     (register != null && register.length > 0)
-                    // ) {
-                    //     console.log('we can')
-                    // }
-                    // removeRow(m)
-                },
                 afterSelection: function(r, c) {
                     var da = this.getDataAtRow(r);
                     selectedRow = "";
                     selectedRow = da[0];
+                    displayUserInfos(da[0])
                     console.log(selectedRow);
-
                 },
                 afterGetColHeader: alignHeaders,
                 beforeRenderer: addClassesToRows,
