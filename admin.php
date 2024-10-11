@@ -303,8 +303,6 @@
             <?= $message ?>
         </div>
     <?php endif; ?>
-    <script src="./js/confirmDialog.js" type="application/js">
-    </script>
     <script>
         // import Handsontable from "handsontable";
         // import "handsontable/dist/handsontable.min.css";
